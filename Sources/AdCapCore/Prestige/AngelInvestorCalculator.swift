@@ -56,10 +56,25 @@ public struct AngelInvestorCalculator: Sendable {
             return 0
         }
 
-        let normalized = (lifetimeEarnings - parameters.activationEarnings) / parameters.scalingFactor + 1
-        let computed = powDecimal(normalized, parameters.growthExponent) - 1
-        let angels = max(computed, 0)
+        let angels = max(rawAngelsEarned(lifetimeEarnings: lifetimeEarnings), 0)
         return parameters.floorResults ? floorDecimal(angels) : angels
+    }
+
+    /// Provides the fractional progress towards earning the next angel.
+    ///
+    /// The returned value is always in the range `[0, 1)` where `0` means the
+    /// player has just earned their latest angel and `1` represents that the
+    /// next angel is imminent. Earnings below the activation threshold report
+    /// a progress of `0`.
+    public func progressTowardsNextAngel(lifetimeEarnings: Decimal) -> Decimal {
+        guard lifetimeEarnings >= parameters.activationEarnings else {
+            return 0
+        }
+
+        let angels = max(rawAngelsEarned(lifetimeEarnings: lifetimeEarnings), 0)
+        let whole = floorDecimal(angels)
+        let progress = angels - whole
+        return max(progress, 0)
     }
 
     /// Calculates the number of angels that would be received by resetting now
@@ -114,6 +129,12 @@ public struct AngelInvestorCalculator: Sendable {
         let factor = parameters.diminishingReturnFactor
         let numerator = logDecimal(1 + surplus * factor)
         return baseBonus * numerator / factor
+    }
+
+    private func rawAngelsEarned(lifetimeEarnings: Decimal) -> Decimal {
+        let normalized = (lifetimeEarnings - parameters.activationEarnings) / parameters.scalingFactor + 1
+        let computed = powDecimal(normalized, parameters.growthExponent) - 1
+        return computed
     }
 
     private func powDecimal(_ value: Decimal, _ exponent: Decimal) -> Decimal {

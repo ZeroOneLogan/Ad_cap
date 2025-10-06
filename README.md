@@ -16,6 +16,8 @@ The Swift package `AdCapPlus` exposes the `AdCapCore` library target.
 * Provides helper utilities to evaluate prestige resets, estimate production
   multipliers with diminishing returns, and determine the earnings needed to hit
   a target angel milestone.
+* Exposes progress tracking to show how close the player is to their next
+  angel, making it easy to drive UI meters or reset prompts.
 
 ## Running Tests
 

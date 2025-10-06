@@ -50,4 +50,15 @@ final class AngelInvestorCalculatorTests: XCTestCase {
         let earned = calculator.angelsEarned(lifetimeEarnings: required)
         XCTAssertGreaterThanOrEqual(earned, targetAngels)
     }
+
+    func testProgressTowardsNextAngelMonotonicallyIncreases() {
+        XCTAssertEqual(calculator.progressTowardsNextAngel(lifetimeEarnings: 50_000), 0)
+
+        let mid = calculator.progressTowardsNextAngel(lifetimeEarnings: 250_000)
+        let higher = calculator.progressTowardsNextAngel(lifetimeEarnings: 260_000)
+
+        XCTAssertGreaterThan(mid, 0)
+        XCTAssertLessThan(mid, 1)
+        XCTAssertGreaterThan(higher, mid)
+    }
 }
