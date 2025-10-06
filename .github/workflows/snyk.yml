@@ -1,0 +1,34 @@
+name: Security (Snyk Open Source + Code)
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  snyk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install Swift so Snyk can build the SPM dep graph
+      - uses: swift-actions/setup-swift@v2
+        with: { swift-version: '6.0' }
+
+      # Install Snyk CLI
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
+
+      # Open Source (SCA) scan for SPM (reads Package.swift)
+      - name: Snyk Open Source (SwiftPM)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk test --all-projects --severity-threshold=low
+
+      # Snyk Code (SAST) scan for Swift
+      - name: Snyk Code
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk code test --severity-threshold=low
