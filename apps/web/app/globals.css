@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 font-sans min-h-screen;
+}
+
+a {
+  @apply text-brand-400 hover:text-brand-300;
+}
+
+button:disabled {
+  @apply opacity-60 cursor-not-allowed;
+}
