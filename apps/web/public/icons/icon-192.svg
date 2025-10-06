@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">Idle Tycoon Badge</title>
+  <desc id="desc">Rounded square badge with upward trend arrow.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4b67ff" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="160" height="160" rx="36" fill="url(#bg)" />
+  <path fill="#f8fafc" d="M60 126a6 6 0 0 1-4.24-10.24l36-36a6 6 0 0 1 8.48 0L116 96.5l18.76-18.76A6 6 0 1 1 148 85l-22.99 23a6 6 0 0 1-8.48 0L100 91.46l-31.76 31.76A6 6 0 0 1 60 126Z" />
+  <path fill="#f8fafc" d="M60 138a6 6 0 0 1 0-12h72a6 6 0 0 1 0 12Z" />
+</svg>

@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.pnp.cjs
+.pnp.loader.mjs
+.DS_Store
+coverage
+*.log
+.env*
+husky/_
+pnpm-lock.yaml
+apps/web/public/icons/*.png

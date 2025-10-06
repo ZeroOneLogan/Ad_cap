@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Idle Tycoon Crest</title>
+  <desc id="desc">Large gradient crest with exponential arrow motif.</desc>
+  <defs>
+    <radialGradient id="bg512" cx="30%" cy="30%" r="85%">
+      <stop offset="0%" stop-color="#4b67ff" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </radialGradient>
+    <linearGradient id="arrow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#e0f2fe" />
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="416" height="416" rx="96" fill="url(#bg512)" />
+  <path fill="url(#arrow)" d="M160 360a16 16 0 0 1-11.31-27.31l124-124a16 16 0 0 1 22.62 0L328 241.37l69.65-69.66A16 16 0 1 1 420.3 195l-80 80a16 16 0 0 1-22.62 0L296 253.66l-108.69 108.7A16 16 0 0 1 160 360Z" />
+  <rect x="160" y="384" width="192" height="32" rx="16" fill="#f8fafc" />
+</svg>
