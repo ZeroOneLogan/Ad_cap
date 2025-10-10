@@ -1,18 +1,39 @@
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
-import type { Metadata } from 'next';
-import { ReactNode } from 'react';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Idle Tycoon Web',
-  description: 'Invest, automate, and prestige your way to exponential riches.',
+  title: 'Idle Tycoon',
+  description: 'A modern browser idle/incremental game',
   manifest: '/manifest.json',
-  themeColor: '#4b67ff'
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Idle Tycoon',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const viewport: Viewport = {
+  themeColor: '#0ea5e9',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">{children}</body>
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

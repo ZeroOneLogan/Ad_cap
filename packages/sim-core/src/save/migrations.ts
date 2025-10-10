@@ -1,50 +1,34 @@
-import Decimal from 'decimal.js';
-import { createInitialState } from '../simulation/engine';
-import type { GameState } from '../types';
-import { saveSchema } from './schema';
+import type { SaveMigration } from '../types';
 
-interface Migration {
-  version: number;
-  migrate: (state: any) => any;
-}
-
-const migrations: Migration[] = [
-  {
-    version: 1,
-    migrate: (state) => state
-  }
+export const migrations: SaveMigration[] = [
+  // Example migration from version 0 to 1
+  // {
+  //   from: 0,
+  //   to: 1,
+  //   migrate: (data: any) => {
+  //     // Transform data from version 0 to version 1
+  //     return {
+  //       ...data,
+  //       version: 1,
+  //       // Add new fields, transform existing ones, etc.
+  //     };
+  //   },
+  // },
 ];
 
-export function migrateSave(raw: unknown, now: number): GameState {
-  const parsed = saveSchema.safeParse(raw);
-  if (!parsed.success) {
-    return createInitialState(now);
-  }
-  let current = parsed.data;
-  for (const migration of migrations) {
-    if (current.version < migration.version) {
-      current = migration.migrate(current);
-      current.version = migration.version;
+export function migrateSaveData(data: any, targetVersion: number): any {
+  let currentData = data;
+  let currentVersion = data.version || 0;
+  
+  while (currentVersion < targetVersion) {
+    const migration = migrations.find(m => m.from === currentVersion);
+    if (!migration) {
+      throw new Error(`No migration found from version ${currentVersion}`);
     }
+    
+    currentData = migration.migrate(currentData);
+    currentVersion = migration.to;
   }
-  return {
-    ...current,
-    balance: new Decimal(current.balance),
-    totalEarned: new Decimal(current.totalEarned),
-    prestige: {
-      ...current.prestige,
-      points: new Decimal(current.prestige.points),
-      totalPrestige: new Decimal(current.prestige.totalPrestige),
-      multiplier: new Decimal(current.prestige.multiplier)
-    },
-    businesses: Object.fromEntries(
-      Object.entries(current.businesses).map(([id, business]) => [
-        id,
-        {
-          ...business,
-          totalEarned: new Decimal(business.totalEarned)
-        }
-      ])
-    )
-  } as GameState;
+  
+  return currentData;
 }

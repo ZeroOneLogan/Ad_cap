@@ -13,38 +13,96 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
-
+      
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-
+          
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-
+          
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+            
       - run: pnpm install --frozen-lockfile
 
-      - name: Snyk Open Source
+      # Snyk Open Source (dependencies)
+      - name: Snyk Open Source Security Scan
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: test --severity-threshold=medium
 
-      - name: Snyk Code
+      # Snyk Code (SAST)
+      - name: Snyk Code Security Scan
         run: npx snyk code test --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - run: pnpm run typecheck
-      - run: pnpm run lint
-      - run: pnpm run test -- --run
-      - run: pnpm run build
+      - name: Run type checking
+        run: pnpm run typecheck
 
-      - name: Upload Snyk Code results
+      - name: Run linting
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm run test -- --run
+
+      - name: Build application
+        run: pnpm run build
+
+      # Optional: Upload Snyk results to GitHub Code Scanning
+      - name: Run Snyk to generate SARIF
+        if: always()
+        continue-on-error: true
+        run: |
+          npx snyk code test --sarif-file-output=snyk-code.sarif || true
+          npx snyk test --sarif-file-output=snyk-opensource.sarif || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload Snyk Code results to GitHub Code Scanning
         if: always()
         uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
         with:
-          sarif_file: snyk.sarif
+          sarif_file: snyk-code.sarif
           category: snyk-code
+
+      - name: Upload Snyk Open Source results to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: snyk-opensource.sarif
+          category: snyk-opensource
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: apps/web/.next
+
+  deploy-preview:
+    needs: build-test-scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel Preview
+        run: |
+          echo "Vercel preview deployment would happen here"
+          echo "Configure Vercel integration in your repository settings"
