@@ -36,7 +36,9 @@ export function createInitialState(now: number): GameState {
         durationMs: business.durationMs,
         isAutomated: false,
         unlocked,
-        totalEarned: new Decimal(0)
+        totalEarned: new Decimal(0),
+        lastCycleStart: now,
+        isRunning: false
       };
       return [business.id, state];
     })
@@ -69,7 +71,7 @@ export function triggerBusiness(state: GameState, businessId: string, now: numbe
   if (!business?.unlocked) {
     return state;
   }
-  if (business.progressMs > 0) {
+  if (business.progressMs > 0 || business.isRunning) {
     return state;
   }
   return {
@@ -79,7 +81,9 @@ export function triggerBusiness(state: GameState, businessId: string, now: numbe
       [businessId]: {
         ...business,
         progressMs: 0.0001,
-        durationMs: getBusinessDefinition(businessId).durationMs
+        durationMs: getBusinessDefinition(businessId).durationMs,
+        isRunning: true,
+        lastCycleStart: now
       }
     },
     lastTick: now
@@ -105,14 +109,25 @@ function advanceByStep(state: GameState, stepMs: number, currentTime: number): G
   return produce(state, (draft) => {
     Object.values(draft.businesses).forEach((business) => {
       if (!business.unlocked) {
+        business.isRunning = false;
         return;
       }
       const managerId = `${business.id}-manager`;
       const managerState = draft.managers[managerId];
       const isAutomated = business.isAutomated || managerState?.hired;
+      
+      // Start running if automated or manually triggered
       if (business.progressMs <= 0 && !isAutomated) {
+        business.isRunning = false;
         return;
       }
+      
+      // Mark as running and track cycle start
+      if (!business.isRunning) {
+        business.isRunning = true;
+        business.lastCycleStart = currentTime;
+      }
+      
       business.progressMs += stepMs;
       const duration = business.durationMs;
       if (business.progressMs >= duration) {
@@ -121,6 +136,12 @@ function advanceByStep(state: GameState, stepMs: number, currentTime: number): G
         draft.totalEarned = draft.totalEarned.add(payouts);
         business.totalEarned = business.totalEarned.add(payouts);
         business.progressMs = isAutomated ? business.progressMs - duration : 0;
+        business.lastCycleStart = currentTime;
+        
+        // Reset running state if not automated
+        if (!isAutomated) {
+          business.isRunning = false;
+        }
       }
     });
     draft.lastTick = currentTime;

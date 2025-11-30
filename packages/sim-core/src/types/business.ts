@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Legacy Business config schema (Zod-based)
 export const BusinessConfigSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -25,7 +26,8 @@ export const BusinessConfigSchema = z.object({
 
 export type BusinessConfig = z.infer<typeof BusinessConfigSchema>;
 
-export interface BusinessState {
+// Legacy BusinessState type - kept for backwards compatibility
+export interface LegacyBusinessState {
   level: number;
   managed: boolean;
   lastTick: number;

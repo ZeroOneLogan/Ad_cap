@@ -1,15 +1,39 @@
 import Big from 'big.js';
-import type { BusinessConfig, GameState, UpgradeEffect } from '../types';
 
 // Configure Big.js
 Big.DP = 20; // Decimal places
 Big.RM = Big.roundDown; // Rounding mode
 
+// Simple business config interface for legacy compatibility
+interface LegacyBusinessConfig {
+  id: string;
+  baseCost: string;
+  costGrowth: number;
+  baseIncome: string;
+  baseTime: number;
+}
+
+interface UpgradeEffect {
+  type: 'business_income' | 'business_speed' | 'all_income' | 'all_speed';
+  businessId?: string;
+  multiplier: number;
+}
+
+interface LegacyBusinessState {
+  level: number;
+  managed: boolean;
+}
+
+interface LegacyGameState {
+  prestigeLevel: number;
+  businesses: Record<string, LegacyBusinessState>;
+}
+
 /**
  * Calculate the cost of the next level for a business
  */
 export function calculateBusinessCost(
-  business: BusinessConfig,
+  business: LegacyBusinessConfig,
   currentLevel: number
 ): Big {
   const base = new Big(business.baseCost);
@@ -21,7 +45,7 @@ export function calculateBusinessCost(
  * Calculate the cost of buying multiple levels
  */
 export function calculateBulkCost(
-  business: BusinessConfig,
+  business: LegacyBusinessConfig,
   currentLevel: number,
   amount: number
 ): Big {
@@ -41,7 +65,7 @@ export function calculateBulkCost(
  * Calculate income per cycle for a business
  */
 export function calculateBusinessIncome(
-  business: BusinessConfig,
+  business: LegacyBusinessConfig,
   level: number,
   upgrades: UpgradeEffect[],
   prestigeMultiplier: number
@@ -70,7 +94,7 @@ export function calculateBusinessIncome(
  * Calculate cycle time for a business
  */
 export function calculateBusinessTime(
-  business: BusinessConfig,
+  business: LegacyBusinessConfig,
   upgrades: UpgradeEffect[],
   prestigeSpeedMultiplier: number
 ): number {
@@ -123,11 +147,11 @@ export function calculatePrestigeMultipliers(
 }
 
 /**
- * Calculate offline progress
+ * Calculate offline progress (legacy version)
  */
 export function calculateOfflineProgress(
-  state: GameState,
-  businesses: BusinessConfig[],
+  state: LegacyGameState,
+  businesses: LegacyBusinessConfig[],
   upgrades: UpgradeEffect[],
   elapsedSeconds: number,
   maxOfflineSeconds: number
@@ -138,8 +162,8 @@ export function calculateOfflineProgress(
   
   const prestigeMultipliers = calculatePrestigeMultipliers(
     state.prestigeLevel,
-    1.1, // TODO: get from config
-    0.99  // TODO: get from config
+    1.1,
+    0.99
   );
   
   for (const business of businesses) {
