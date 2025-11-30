@@ -1,11 +1,11 @@
-import type { SaveMigration } from '../types';
+import type { AnyMigration } from '../types';
 
-export const migrations: SaveMigration[] = [
+export const migrations: AnyMigration[] = [
   // Example migration from version 0 to 1
   // {
   //   from: 0,
   //   to: 1,
-  //   migrate: (data: any) => {
+  //   migrate: (data) => {
   //     // Transform data from version 0 to version 1
   //     return {
   //       ...data,
@@ -16,7 +16,10 @@ export const migrations: SaveMigration[] = [
   // },
 ];
 
-export function migrateSaveData(data: any, targetVersion: number): any {
+export function migrateSaveData(
+  data: { version: number } & Record<string, unknown>,
+  targetVersion: number
+): { version: number } & Record<string, unknown> {
   let currentData = data;
   let currentVersion = data.version || 0;
   
