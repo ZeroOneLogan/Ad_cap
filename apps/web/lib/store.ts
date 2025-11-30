@@ -4,15 +4,17 @@ import localForage from 'localforage';
 import { useEffect } from 'react';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import {
+import type {
   BulkAmount,
   SimulationSnapshot,
   OfflineReport,
+  GameState
+} from '@idle-tycoon/sim-core';
+import {
   deserializeState,
   serializeState,
   createInitialState,
   computeOfflineProgress,
-  type GameState
 } from '@idle-tycoon/sim-core';
 import type { WorkerMessage, WorkerResponse } from '@idle-tycoon/sim-core/worker';
 
@@ -56,6 +58,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
             draft.snapshot = snapshot;
             draft.ready = true;
           });
+          // Remove incomePerSecond (derived value) before persisting
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { incomePerSecond, ...rest } = snapshot;
           const toPersist: GameState = { ...rest };
           void localForage.setItem(SAVE_KEY, serializeState(toPersist));
@@ -100,27 +104,27 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
       window.addEventListener('beforeunload', cleanup, { once: true });
     },
-    setBulk: (bulk) => {
+    setBulk: (bulk: BulkAmount) => {
       set((draft) => {
         draft.bulk = bulk;
       });
     },
-    trigger: (businessId) => {
+    trigger: (businessId: string) => {
       const worker = get().worker;
       if (!worker) return;
       worker.postMessage({ type: 'TRIGGER', businessId, now: Date.now() } satisfies WorkerMessage);
     },
-    buyBusiness: (businessId) => {
+    buyBusiness: (businessId: string) => {
       const worker = get().worker;
       if (!worker) return;
       worker.postMessage({ type: 'BUY', businessId, bulk: get().bulk } satisfies WorkerMessage);
     },
-    buyUpgrade: (upgradeId) => {
+    buyUpgrade: (upgradeId: string) => {
       const worker = get().worker;
       if (!worker) return;
       worker.postMessage({ type: 'UPGRADE', upgradeId } satisfies WorkerMessage);
     },
-    hireManager: (managerId) => {
+    hireManager: (managerId: string) => {
       const worker = get().worker;
       if (!worker) return;
       worker.postMessage({ type: 'MANAGER', managerId } satisfies WorkerMessage);

@@ -1,44 +1,119 @@
-import { z } from 'zod';
-import type { GameState, SaveData } from '../types';
-import { SaveDataSchema } from '../types';
-import { migrateSaveData } from './migrations';
-import { SAVE_VERSION } from '../economy/constants';
+import Decimal from 'decimal.js';
+import type { GameState, BusinessState, UpgradeState, ManagerState, PrestigeState } from '../types';
+
+const CURRENT_VERSION = 1;
+
+// Serialized format for storage
+interface SerializedGameState {
+  version: number;
+  balance: string;
+  totalEarned: string;
+  lastTick: number;
+  businesses: Record<string, SerializedBusinessState>;
+  upgrades: Record<string, UpgradeState>;
+  managers: Record<string, ManagerState>;
+  prestige: SerializedPrestigeState;
+}
+
+interface SerializedBusinessState {
+  id: string;
+  amount: number;
+  progressMs: number;
+  durationMs: number;
+  isAutomated: boolean;
+  unlocked: boolean;
+  totalEarned: string;
+  lastCycleStart: number;
+  isRunning: boolean;
+}
+
+interface SerializedPrestigeState {
+  points: string;
+  totalPrestige: string;
+  lastReset: number;
+  multiplier: string;
+  timesPrestiged?: number;
+}
+
+export interface SaveData {
+  version: number;
+  state: SerializedGameState;
+  timestamp: number;
+}
 
 export class SaveSerializer {
   /**
    * Serialize game state to save data
    */
   static serialize(state: GameState): SaveData {
+    const serialized: SerializedGameState = {
+      version: CURRENT_VERSION,
+      balance: state.balance.toString(),
+      totalEarned: state.totalEarned.toString(),
+      lastTick: state.lastTick,
+      businesses: Object.fromEntries(
+        Object.entries(state.businesses).map(([id, business]) => [
+          id,
+          {
+            ...business,
+            totalEarned: business.totalEarned.toString(),
+          },
+        ])
+      ),
+      upgrades: state.upgrades,
+      managers: state.managers,
+      prestige: {
+        points: state.prestige.points.toString(),
+        totalPrestige: state.prestige.totalPrestige.toString(),
+        lastReset: state.prestige.lastReset,
+        multiplier: state.prestige.multiplier.toString(),
+        timesPrestiged: state.prestige.timesPrestiged,
+      },
+    };
+
     return {
-      version: SAVE_VERSION,
-      state,
+      version: CURRENT_VERSION,
+      state: serialized,
       timestamp: Date.now(),
     };
   }
-  
+
   /**
    * Deserialize save data to game state
    */
-  static deserialize(data: unknown): GameState {
-    try {
-      // Parse and validate
-      const parsed = SaveDataSchema.parse(data);
-      
-      // Migrate if needed
-      if (parsed.version < SAVE_VERSION) {
-        const migrated = migrateSaveData(parsed, SAVE_VERSION);
-        return migrated.state;
-      }
-      
-      return parsed.state;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        throw new Error(`Invalid save data: ${error.message}`);
-      }
-      throw error;
-    }
+  static deserialize(data: SaveData): GameState {
+    const { state } = data;
+
+    const businesses: Record<string, BusinessState> = Object.fromEntries(
+      Object.entries(state.businesses).map(([id, business]) => [
+        id,
+        {
+          ...business,
+          totalEarned: new Decimal(business.totalEarned),
+        },
+      ])
+    );
+
+    const prestige: PrestigeState = {
+      points: new Decimal(state.prestige.points),
+      totalPrestige: new Decimal(state.prestige.totalPrestige),
+      lastReset: state.prestige.lastReset,
+      multiplier: new Decimal(state.prestige.multiplier),
+      timesPrestiged: state.prestige.timesPrestiged,
+    };
+
+    return {
+      version: state.version,
+      balance: new Decimal(state.balance),
+      totalEarned: new Decimal(state.totalEarned),
+      lastTick: state.lastTick,
+      businesses,
+      upgrades: state.upgrades,
+      managers: state.managers,
+      prestige,
+    };
   }
-  
+
   /**
    * Export save data as JSON string
    */
@@ -46,39 +121,16 @@ export class SaveSerializer {
     const saveData = this.serialize(state);
     return JSON.stringify(saveData);
   }
-  
+
   /**
    * Import save data from JSON string
    */
   static import(jsonString: string): GameState {
     try {
-      const data = JSON.parse(jsonString);
+      const data = JSON.parse(jsonString) as SaveData;
       return this.deserialize(data);
     } catch (error) {
       throw new Error(`Failed to import save data: ${error}`);
     }
-  }
-  
-  /**
-   * Create a new game state
-   */
-  static createNewGame(): GameState {
-    return {
-      money: '0',
-      totalEarnings: '0',
-      prestigeCurrency: '0',
-      prestigeLevel: 0,
-      businesses: {},
-      upgrades: {},
-      managers: {},
-      lastSeen: Date.now(),
-      startTime: Date.now(),
-      stats: {
-        totalClicks: 0,
-        totalUpgrades: 0,
-        totalPrestiges: 0,
-        playTime: 0,
-      },
-    };
   }
 }

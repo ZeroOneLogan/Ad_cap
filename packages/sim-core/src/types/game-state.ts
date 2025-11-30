@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import Big from 'big.js';
 
-export const GameStateSchema = z.object({
+// Legacy GameState schema (Zod-based, string serialization for Big numbers)
+// This is kept for backwards compatibility with older save data
+export const LegacyGameStateSchema = z.object({
   // Core game state
   money: z.string(), // Big.js serialized
   totalEarnings: z.string(), // Big.js serialized
@@ -34,10 +35,10 @@ export const GameStateSchema = z.object({
   }),
 });
 
-export type GameState = z.infer<typeof GameStateSchema>;
+export type LegacyGameState = z.infer<typeof LegacyGameStateSchema>;
 
-export interface SimulationSnapshot {
-  state: GameState;
+export interface LegacySimulationSnapshot {
+  state: LegacyGameState;
   timestamp: number;
   deltaTime: number;
 }

@@ -9,6 +9,7 @@ import {
   createInitialState,
   getSnapshot,
   purchaseBusinessBulk,
+  triggerBusiness,
   tick
 } from '../..';
 
@@ -21,8 +22,11 @@ describe('simulation engine', () => {
     expect(state.balance.toNumber()).toBeGreaterThan(0);
 
     state = purchaseBusinessBulk(state, lemonade.id, 1).newState;
+    // Trigger the business to start running
+    state = triggerBusiness(state, lemonade.id, now);
     const initialBalance = state.balance;
-    state = tick(state, { now: now + BASE_TICK_MS * 10 });
+    // Run enough ticks to complete a cycle (750ms duration)
+    state = tick(state, { now: now + 1000 });
     expect(state.balance.gt(initialBalance)).toBe(true);
   });
 
@@ -36,13 +40,16 @@ describe('simulation engine', () => {
     let state = createInitialState(now);
     state.totalEarned = new Decimal(1e9);
     const result = applyPrestige(state, now + 1000);
-    expect(result.balance.toNumber()).toBe(0);
+    // Starting balance after prestige
+    expect(result.balance.toNumber()).toBe(20);
     expect(result.businesses['lemonade-stand'].unlocked).toBe(true);
+    expect(result.businesses['lemonade-stand'].amount).toBe(1);
   });
 
   it('creates snapshots with income per second', () => {
     let state = createInitialState(now);
-    state = purchaseBusinessBulk(state, BUSINESSES[0].id, 5).newState;
+    // Buy 10 at a time (valid BulkAmount)
+    state = purchaseBusinessBulk(state, BUSINESSES[0].id, 10).newState;
     const snapshot = getSnapshot(state);
     expect(snapshot.incomePerSecond.gt(0)).toBe(true);
   });

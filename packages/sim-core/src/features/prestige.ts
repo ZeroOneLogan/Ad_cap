@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js';
-import { PRESTIGE_ALPHA, PRESTIGE_K, PRESTIGE_TIERS } from '../economy/economy';
-import type { GameState, PrestigeState } from '../types';
+import { PRESTIGE_ALPHA, PRESTIGE_K, PRESTIGE_TIERS, BUSINESSES } from '../economy/economy';
+import type { GameState, PrestigeState, BusinessState } from '../types';
 
 export function calculatePrestigePoints(totalEarnings: Decimal): Decimal {
   if (totalEarnings.lte(0)) {
@@ -20,31 +20,42 @@ export function applyPrestige(state: GameState, now: number): GameState {
     return state;
   }
 
-  const newMultiplier = PRESTIGE_TIERS.reduce((multiplier, tier) => {
-    if (points.gte(tier.threshold)) {
+  // Calculate new multiplier based on total angel points
+  const totalPoints = state.prestige.points.add(points);
+  const angelMultiplier = totalPoints.mul(0.02).add(1); // 2% per angel
+  
+  // Also apply tier bonuses
+  const tierMultiplier = PRESTIGE_TIERS.reduce((multiplier, tier) => {
+    if (totalPoints.gte(tier.threshold)) {
       return multiplier.mul(tier.bonusMultiplier);
     }
     return multiplier;
   }, new Decimal(1));
 
   const prestigeState: PrestigeState = {
-    points: state.prestige.points.add(points),
+    points: totalPoints,
     totalPrestige: state.prestige.totalPrestige.add(points),
     lastReset: now,
-    multiplier: newMultiplier
+    multiplier: angelMultiplier.mul(tierMultiplier),
+    timesPrestiged: (state.prestige.timesPrestiged || 0) + 1
   };
 
-  const resetBusinesses = Object.fromEntries(
-    Object.entries(state.businesses).map(([id, business]) => [
-      id,
-      {
-        ...business,
-        amount: 0,
-        progressMs: 0,
-        unlocked: id === 'lemonade-stand'
-      }
-    ])
-  );
+  // Reset businesses but keep first one unlocked with 1 unit
+  const resetBusinesses: Record<string, BusinessState> = {};
+  BUSINESSES.forEach((business, index) => {
+    const isFirst = index === 0;
+    resetBusinesses[business.id] = {
+      id: business.id,
+      amount: isFirst ? 1 : 0,
+      progressMs: 0,
+      durationMs: business.durationMs,
+      isAutomated: false,
+      unlocked: isFirst,
+      totalEarned: new Decimal(0),
+      lastCycleStart: now,
+      isRunning: false
+    };
+  });
 
   const resetUpgrades = Object.fromEntries(
     Object.entries(state.upgrades).map(([id]) => [id, { id, purchased: false }])
@@ -55,7 +66,7 @@ export function applyPrestige(state: GameState, now: number): GameState {
 
   return {
     ...state,
-    balance: new Decimal(0),
+    balance: new Decimal(20), // Give starting money after prestige
     totalEarned: new Decimal(0),
     lastTick: now,
     prestige: prestigeState,
